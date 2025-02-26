@@ -32,7 +32,7 @@ interface CalendarEvent {
   title: string;
   start: Date;
   end: Date;
-  resource?: Robot;
+  resource?: any;
   location?: string;
   contactPerson?: {
     name?: string;
