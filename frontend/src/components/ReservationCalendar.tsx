@@ -7,11 +7,11 @@ import {
   ButtonGroup
 } from '@mui/material';
 import { Calendar, dateFnsLocalizer, View } from 'react-big-calendar';
-import { format as formatDate } from 'date-fns/format';
+import { format as formatDate } from 'date-fns';
 import parse from 'date-fns/parse';
 import startOfWeek from 'date-fns/startOfWeek';
 import getDay from 'date-fns/getDay';
-import de from 'date-fns/locale/de';
+import { de } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { Robot, Reservation } from '../types';
 
