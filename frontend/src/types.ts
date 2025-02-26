@@ -16,6 +16,13 @@ export interface Reservation {
   endDate: string;
   purpose: string;
   status: string;
+  eventName: string;
+  location: string;
+  contactPerson?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+  };
 }
 
 export interface User {
