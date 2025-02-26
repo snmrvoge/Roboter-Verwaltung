@@ -10,8 +10,8 @@ export interface Robot {
 
 export interface Reservation {
   _id: string;
-  robotId: string;
-  userId: string;
+  robotId: string | Robot;
+  userId: string | User;
   startDate: string;
   endDate: string;
   purpose: string;

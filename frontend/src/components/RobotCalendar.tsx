@@ -11,28 +11,10 @@ import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material';
+import { Reservation } from '../types';
 
 interface RobotCalendarProps {
-  reservations: {
-    _id: string;
-    robotId: {
-      _id: string;
-      name: string;
-      robotType: string;
-      status: string;
-      homebase: string;
-    };
-    userId: {
-      _id: string;
-      name: string;
-      email: string;
-      role: string;
-    };
-    eventName: string;
-    location: string;
-    startDate: string;
-    endDate: string;
-  }[];
+  reservations: Reservation[];
 }
 
 const RobotCalendar: React.FC<RobotCalendarProps> = ({ reservations }) => {
