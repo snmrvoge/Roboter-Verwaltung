@@ -11,12 +11,12 @@ import { format as formatDate } from 'date-fns/format';
 import parse from 'date-fns/parse';
 import startOfWeek from 'date-fns/startOfWeek';
 import getDay from 'date-fns/getDay';
-import deDE from 'date-fns/locale/de';
+import de from 'date-fns/locale/de';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { Robot, Reservation } from '../types';
 
 const locales = {
-  'de-DE': deDE,
+  'de-DE': de,
 };
 
 const localizer = dateFnsLocalizer({
@@ -177,17 +177,17 @@ export const ReservationCalendar: React.FC<ReservationCalendarProps> = ({
       <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Box>
           <Typography variant="h6" component="h2">
-            {view === 'month' && formatDate(date, 'MMMM yyyy', { locale: deDE })}
+            {view === 'month' && formatDate(date, 'MMMM yyyy', { locale: de })}
             {view === 'week' && (() => {
               try {
                 const endDate = getWeekEndDate(date);
-                return `${formatDate(date, 'd. MMMM', { locale: deDE })} - ${formatDate(endDate, 'd. MMMM yyyy', { locale: deDE })}`;
+                return `${formatDate(date, 'd. MMMM', { locale: de })} - ${formatDate(endDate, 'd. MMMM yyyy', { locale: de })}`;
               } catch (error) {
                 console.error('Fehler beim Formatieren des Wochendatums:', error);
                 return 'Wochenansicht';
               }
             })()}
-            {view === 'day' && formatDate(date, 'EEEE, d. MMMM yyyy', { locale: deDE })}
+            {view === 'day' && formatDate(date, 'EEEE, d. MMMM yyyy', { locale: de })}
           </Typography>
         </Box>
         <Box>
@@ -257,12 +257,12 @@ export const ReservationCalendar: React.FC<ReservationCalendarProps> = ({
           }
         }}
         formats={{
-          dayHeaderFormat: (date: Date) => formatDate(date, 'EEEE, d. MMMM yyyy', { locale: deDE }),
-          dayFormat: (date: Date) => formatDate(date, 'EEEE, d. MMMM yyyy', { locale: deDE }),
+          dayHeaderFormat: (date: Date) => formatDate(date, 'EEEE, d. MMMM yyyy', { locale: de }),
+          dayFormat: (date: Date) => formatDate(date, 'EEEE, d. MMMM yyyy', { locale: de }),
           dayRangeHeaderFormat: ({ start, end }: { start: Date, end: Date }) => 
-            `${formatDate(start, 'd. MMMM', { locale: deDE })} - ${formatDate(end, 'd. MMMM yyyy', { locale: deDE })}`,
-          monthHeaderFormat: (date: Date) => formatDate(date, 'MMMM yyyy', { locale: deDE }),
-          weekdayFormat: (date: Date) => formatDate(date, 'EEE', { locale: deDE }),
+            `${formatDate(start, 'd. MMMM', { locale: de })} - ${formatDate(end, 'd. MMMM yyyy', { locale: de })}`,
+          monthHeaderFormat: (date: Date) => formatDate(date, 'MMMM yyyy', { locale: de }),
+          weekdayFormat: (date: Date) => formatDate(date, 'EEE', { locale: de }),
         }}
         messages={{
           next: "Vor",
