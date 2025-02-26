@@ -1204,6 +1204,14 @@ app.get('/api/calendar/public/:token/ical', (req, res) => {
   app._router.handle(req, res);
 });
 
+// Statische Dateien für das Frontend
+app.use(express.static(path.join(__dirname, '../frontend/build')));
+
+// Catch-all Route für das Frontend
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+});
+
 // Starte den Server
 const PORT = 3001;
 app.listen(PORT, () => {
