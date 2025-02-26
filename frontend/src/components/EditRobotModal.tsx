@@ -29,7 +29,7 @@ export const EditRobotModal: React.FC<EditRobotModalProps> = ({
 }) => {
   const [formData, setFormData] = useState<Partial<Robot>>({
     name: '',
-    type: 'humanoid',
+    robotType: 'humanoid',
     status: 'available',
     homebase: ''
   });
@@ -38,14 +38,14 @@ export const EditRobotModal: React.FC<EditRobotModalProps> = ({
     if (robot) {
       setFormData({
         name: robot.name,
-        type: robot.type,
+        robotType: robot.robotType,
         status: robot.status,
         homebase: robot.homebase
       });
     } else {
       setFormData({
         name: '',
-        type: 'humanoid',
+        robotType: 'humanoid',
         status: 'available',
         homebase: ''
       });
@@ -76,9 +76,9 @@ export const EditRobotModal: React.FC<EditRobotModalProps> = ({
             <FormControl fullWidth required>
               <InputLabel>Typ</InputLabel>
               <Select
-                value={formData.type}
+                value={formData.robotType}
                 label="Typ"
-                onChange={(e) => setFormData({ ...formData, type: e.target.value as 'humanoid' | 'dog' })}
+                onChange={(e) => setFormData({ ...formData, robotType: e.target.value as 'humanoid' | 'dog' })}
               >
                 <MenuItem value="humanoid">Humanoid</MenuItem>
                 <MenuItem value="dog">Roboterhund</MenuItem>

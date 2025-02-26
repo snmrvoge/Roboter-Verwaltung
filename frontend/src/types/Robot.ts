@@ -1,7 +1,7 @@
 export interface Robot {
   _id: string;
   name: string;
-  type: 'humanoid' | 'dog';
+  robotType: 'humanoid' | 'dog';
   status: 'available' | 'reserved' | 'maintenance';
   homebase: string;
 }

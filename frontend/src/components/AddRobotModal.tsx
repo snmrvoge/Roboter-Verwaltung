@@ -14,7 +14,7 @@ import {
 interface AddRobotModalProps {
   open: boolean;
   onClose: () => void;
-  onAdd: (robot: { name: string; type: string; homebase: string }) => Promise<void>;
+  onAdd: (robot: { name: string; robotType: string; homebase: string }) => Promise<void>;
   token: string | null;
 }
 
@@ -25,7 +25,7 @@ export const AddRobotModal: React.FC<AddRobotModalProps> = ({
   token,
 }) => {
   const [name, setName] = useState('');
-  const [type, setType] = useState('humanoid');
+  const [robotType, setRobotType] = useState('humanoid');
   const [homebase, setHomebase] = useState('');
   const [error, setError] = useState('');
 
@@ -33,15 +33,15 @@ export const AddRobotModal: React.FC<AddRobotModalProps> = ({
     e.preventDefault();
     setError('');
 
-    if (!name || !type || !homebase) {
+    if (!name || !robotType || !homebase) {
       setError('Bitte füllen Sie alle Felder aus');
       return;
     }
 
     try {
-      await onAdd({ name, type, homebase });
+      await onAdd({ name, robotType, homebase });
       setName('');
-      setType('humanoid');
+      setRobotType('humanoid');
       setHomebase('');
       onClose();
     } catch (err) {
@@ -74,8 +74,8 @@ export const AddRobotModal: React.FC<AddRobotModalProps> = ({
             <TextField
               select
               label="Typ"
-              value={type}
-              onChange={(e) => setType(e.target.value)}
+              value={robotType}
+              onChange={(e) => setRobotType(e.target.value)}
               fullWidth
               required
             >

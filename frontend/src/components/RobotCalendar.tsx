@@ -18,7 +18,7 @@ interface RobotCalendarProps {
     robotId: {
       _id: string;
       name: string;
-      type: string;
+      robotType: string;
       status: string;
       homebase: string;
     };
