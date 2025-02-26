@@ -4,7 +4,8 @@ import {
   Typography,
   Paper,
   Button,
-  ButtonGroup
+  ButtonGroup,
+  Chip
 } from '@mui/material';
 import { Calendar, dateFnsLocalizer, View } from 'react-big-calendar';
 import { format as formatDate } from 'date-fns';
@@ -58,15 +59,18 @@ export const ReservationCalendar: React.FC<ReservationCalendarProps> = ({
 }) => {
   const [view, setView] = useState<View>('month');
   const [date, setDate] = useState(new Date());
+  const [selectedRobot, setSelectedRobot] = useState<string | null>(null);
   
   const events: CalendarEvent[] = reservations.map(reservation => ({
     id: reservation._id,
-    title: `${reservation.eventName} - ${reservation.purpose || 'Unbekannter Zweck'}`,
+    title: reservation.eventName || reservation.purpose,
     start: new Date(reservation.startDate),
     end: new Date(reservation.endDate),
-    resource: reservation.robotId,
+    resource: typeof reservation.robotId === 'string' 
+      ? robots.find(r => r._id === reservation.robotId) 
+      : reservation.robotId,
     location: reservation.location,
-    contactPerson: reservation.contactPerson
+    contactPerson: reservation.contactPerson,
   }));
 
   const handleSelectSlot = (slotInfo: { start: Date; end: Date }) => {
@@ -78,8 +82,9 @@ export const ReservationCalendar: React.FC<ReservationCalendarProps> = ({
       const isReserved = reservations.some(reservation => {
         const reservationStart = new Date(reservation.startDate);
         const reservationEnd = new Date(reservation.endDate);
+        const robotId = typeof reservation.robotId === 'string' ? reservation.robotId : reservation.robotId._id;
         return (
-          reservation.robotId === robot._id &&
+          robotId === robot._id &&
           ((slotInfo.start >= reservationStart && slotInfo.start < reservationEnd) ||
             (slotInfo.end > reservationStart && slotInfo.end <= reservationEnd) ||
             (slotInfo.start <= reservationStart && slotInfo.end >= reservationEnd))
@@ -94,6 +99,7 @@ export const ReservationCalendar: React.FC<ReservationCalendarProps> = ({
     });
 
     if (availableRobots.length > 0) {
+      setSelectedRobot(availableRobots[0]._id);
       onReserve(availableRobots[0], slotInfo.start, slotInfo.end);
     } else {
       console.log('Keine verfügbaren Roboter für diesen Zeitraum gefunden');
@@ -145,18 +151,45 @@ export const ReservationCalendar: React.FC<ReservationCalendarProps> = ({
   };
 
   const eventPropGetter = (event: CalendarEvent) => {
-    const isMaintenance = event.resource?.status === 'maintenance';
+    const reservation = reservations.find(r => r._id === event.id);
+    if (!reservation) return {};
+    
+    const robotId = typeof reservation.robotId === 'string' ? reservation.robotId : reservation.robotId._id;
+    const robot = robots.find(r => r._id === robotId);
     
     return {
       style: {
-        backgroundColor: isMaintenance ? '#f0ad4e' : (event.resource?.color || '#3174ad'),
-        borderRadius: '4px',
-        opacity: 0.8,
-        color: '#fff',
-        border: isMaintenance ? '2px dashed #d9534f' : '0px',
-        display: 'block',
-        fontWeight: isMaintenance ? 'bold' : 'normal'
-      }
+        backgroundColor: robot?.color || '#3174ad',
+      },
+    };
+  };
+
+  const slotPropGetter = (slotInfo: { start: Date; end: Date }) => {
+    // Finde alle Reservierungen, die sich mit diesem Zeitslot überschneiden
+    const robot = robots.find(r => r._id === selectedRobot);
+    if (!robot) return {};
+    
+    const conflictingReservations = reservations.filter(reservation => {
+      const reservationStart = new Date(reservation.startDate);
+      const reservationEnd = new Date(reservation.endDate);
+      
+      // Prüfe, ob die Reservierung den gleichen Roboter betrifft und sich zeitlich überschneidet
+      const robotId = typeof reservation.robotId === 'string' ? reservation.robotId : reservation.robotId._id;
+      return (
+        robotId === robot._id &&
+        ((slotInfo.start >= reservationStart && slotInfo.start < reservationEnd) ||
+          (slotInfo.end > reservationStart && slotInfo.end <= reservationEnd) ||
+          (slotInfo.start <= reservationStart && slotInfo.end >= reservationEnd))
+      );
+    });
+    
+    // Prüfe, ob der Roboter in Wartung ist
+    const isInMaintenance = robot.status === 'maintenance';
+    
+    return {
+      style: {
+        backgroundColor: conflictingReservations.length > 0 ? '#f0ad4e' : '#fff',
+      },
     };
   };
 
@@ -242,19 +275,50 @@ export const ReservationCalendar: React.FC<ReservationCalendarProps> = ({
         toolbar={false}
         popup={true}
         eventPropGetter={eventPropGetter}
+        slotPropGetter={slotPropGetter}
         onSelectEvent={(event) => onEventClick && onEventClick(event)}
         components={{
           event: (props) => {
             const { event } = props;
+            const reservation = reservations.find(r => r._id === event.id);
+            if (!reservation) return null;
+            
+            // Bestimme, ob robotId ein String oder ein Objekt ist
+            const robotName = typeof reservation.robotId === 'string' 
+              ? robots.find(r => r._id === reservation.robotId)?.name || 'Unbekannter Roboter'
+              : reservation.robotId.name;
+              
+            // Bestimme, ob der Roboter in Wartung ist
+            const robotStatus = typeof reservation.robotId === 'string'
+              ? robots.find(r => r._id === reservation.robotId)?.status
+              : reservation.robotId.status;
+            
+            const isInMaintenance = robotStatus === 'maintenance';
+            
             return (
-              <div
+              <Box 
+                sx={{ p: 1 }}
                 onContextMenu={(e) => onEventContextMenu && onEventContextMenu(event, e)}
-                style={{ height: '100%', width: '100%' }}
               >
-                {props.title}
-              </div>
+                <Typography variant="body2" noWrap>
+                  {event.title}
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Roboter: {robotName}
+                  </Typography>
+                  {isInMaintenance && (
+                    <Chip
+                      label="Wartung"
+                      size="small"
+                      color="warning"
+                      sx={{ ml: 1, height: 20, fontSize: '0.6rem' }}
+                    />
+                  )}
+                </Box>
+              </Box>
             );
-          }
+          },
         }}
         formats={{
           dayHeaderFormat: (date: Date) => formatDate(date, 'EEEE, d. MMMM yyyy', { locale: de }),
