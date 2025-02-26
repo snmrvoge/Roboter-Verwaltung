@@ -79,7 +79,7 @@ export const ReservationCalendar: React.FC<ReservationCalendarProps> = ({
         const reservationStart = new Date(reservation.startDate);
         const reservationEnd = new Date(reservation.endDate);
         return (
-          reservation.robotId._id === robot._id &&
+          reservation.robotId === robot._id &&
           ((slotInfo.start >= reservationStart && slotInfo.start < reservationEnd) ||
             (slotInfo.end > reservationStart && slotInfo.end <= reservationEnd) ||
             (slotInfo.start <= reservationStart && slotInfo.end >= reservationEnd))
