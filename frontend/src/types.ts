@@ -1,10 +1,11 @@
 export interface Robot {
   _id: string;
   name: string;
-  description: string;
+  robotType: string;
   model: string;
   status: string;
   color: string; // Hinzugefügt für die Kalenderansicht
+  homebase: string;
 }
 
 export interface Reservation {
