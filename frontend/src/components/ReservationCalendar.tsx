@@ -61,7 +61,7 @@ export const ReservationCalendar: React.FC<ReservationCalendarProps> = ({
   
   const events: CalendarEvent[] = reservations.map(reservation => ({
     id: reservation._id,
-    title: `${reservation.eventName} - ${reservation.robotId?.name || 'Unbekannter Roboter'}`,
+    title: `${reservation.eventName} - ${reservation.purpose || 'Unbekannter Zweck'}`,
     start: new Date(reservation.startDate),
     end: new Date(reservation.endDate),
     resource: reservation.robotId,
