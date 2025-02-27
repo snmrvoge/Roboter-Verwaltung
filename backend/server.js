@@ -9,8 +9,13 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-// Middleware
-app.use(cors());
+// CORS-Konfiguration
+app.use(cors({
+  origin: '*', // Erlaubt Anfragen von allen Ursprüngen
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend/build')));
 
