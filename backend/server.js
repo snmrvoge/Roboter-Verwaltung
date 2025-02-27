@@ -145,6 +145,12 @@ const isAdmin = (req, res, next) => {
 
 // Routen
 
+// Test endpoint
+app.get('/api/test', (req, res) => {
+  console.log('Test endpoint called');
+  res.json({ message: 'API-Verbindung erfolgreich!' });
+});
+
 // Registrierung
 app.post('/api/register', async (req, res) => {
   try {
@@ -528,11 +534,6 @@ app.delete('/api/reservations/:id', authenticateToken, (req, res) => {
     console.error('Fehler beim Löschen der Reservierung:', error);
     res.status(500).json({ message: 'Serverfehler beim Löschen der Reservierung' });
   }
-});
-
-// Test-Endpunkt
-app.get('/api/test', (req, res) => {
-  res.json({ message: 'API-Verbindung erfolgreich!' });
 });
 
 // Catch-all-Route für das Frontend
