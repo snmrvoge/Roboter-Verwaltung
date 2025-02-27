@@ -52,15 +52,17 @@ const DEFAULT_DB = {
   },
   users: {
     "user1": {
+      "id": "user1",
       "name": "Admin",
       "email": "admin@example.com",
-      "password": "$2b$10$kLt72AD5xLOIst7N3Cd1HOUsCVolKk5GrflSC8TXcqsaiR4EQIFEy",
+      "password": "$2a$10$xtA5fzUiWYvZiGPa0U.mAeEHQ.q3fFYY/QvRSK1ihhPUfWZ6Zvsxy",
       "role": "admin"
     },
     "user2": {
+      "id": "user2",
       "name": "Test User",
       "email": "user@example.com",
-      "password": "$2b$10$kLt72AD5xLOIst7N3Cd1HOUsCVolKk5GrflSC8TXcqsaiR4EQIFEy",
+      "password": "$2a$10$xtA5fzUiWYvZiGPa0U.mAeEHQ.q3fFYY/QvRSK1ihhPUfWZ6Zvsxy",
       "role": "user"
     }
   },
@@ -175,6 +177,7 @@ app.post('/api/register', async (req, res) => {
     // Neuen Benutzer erstellen
     const newUserId = `user${Date.now()}`;
     db.users[newUserId] = {
+      id: newUserId,
       name,
       email,
       password: hashedPassword,
@@ -195,41 +198,51 @@ app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
+    console.log(`Login attempt for email: ${email}`);
+    
+    // Datenbank lesen
     const db = readDatabase();
     
     // Benutzer finden
-    const user = Object.entries(db.users).find(([_, user]) => user.email === email);
+    const userEntry = Object.values(db.users).find(user => user.email === email);
     
-    if (!user) {
-      return res.status(400).json({ message: 'Ungültige Anmeldedaten' });
+    if (!userEntry) {
+      console.log(`User not found: ${email}`);
+      return res.status(401).json({ message: 'Ungültige E-Mail oder Passwort' });
     }
     
-    const [userId, userData] = user;
-    
     // Passwort überprüfen
-    const validPassword = await bcrypt.compare(password, userData.password);
-    if (!validPassword) {
-      return res.status(400).json({ message: 'Ungültige Anmeldedaten' });
+    const isPasswordValid = await bcrypt.compare(password, userEntry.password);
+    
+    console.log(`Password valid: ${isPasswordValid}`);
+    
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Ungültige E-Mail oder Passwort' });
     }
     
     // Token erstellen
     const token = jwt.sign(
-      { id: userId, name: userData.name, email: userData.email, role: userData.role },
-      JWT_SECRET,
-      { expiresIn: '1h' }
+      { 
+        id: userEntry.id, 
+        email: userEntry.email, 
+        role: userEntry.role 
+      }, 
+      JWT_SECRET, 
+      { expiresIn: '24h' }
     );
     
+    // Erfolgreiche Antwort
     res.json({
       token,
       user: {
-        id: userId,
-        name: userData.name,
-        email: userData.email,
-        role: userData.role
+        id: userEntry.id,
+        name: userEntry.name,
+        email: userEntry.email,
+        role: userEntry.role
       }
     });
   } catch (error) {
-    console.error('Fehler beim Login:', error);
+    console.error('Login error:', error);
     res.status(500).json({ message: 'Serverfehler beim Login' });
   }
 });
