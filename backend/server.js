@@ -595,9 +595,9 @@ app.delete('/api/reservations/:id', authenticateToken, (req, res) => {
   }
 });
 
-// Fallback-Route für React-Router
+// Catch-all-Route für das Frontend
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/index.html'));
+  res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
 });
 
 // Datenbank initialisieren
