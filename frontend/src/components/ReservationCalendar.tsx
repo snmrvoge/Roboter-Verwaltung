@@ -294,12 +294,12 @@ export const ReservationCalendar: React.FC<ReservationCalendarProps> = ({
             // Bestimme, ob robotId ein String oder ein Objekt ist
             const robotName = typeof reservation.robotId === 'string' 
               ? robots.find(r => r._id === reservation.robotId)?.name || 'Unbekannter Roboter'
-              : reservation.robotId.name;
+              : (reservation.robotId as Robot).name;
               
             // Bestimme, ob der Roboter in Wartung ist
             const robotStatus = typeof reservation.robotId === 'string'
               ? robots.find(r => r._id === reservation.robotId)?.status
-              : reservation.robotId.status;
+              : (reservation.robotId as Robot).status;
             
             const isInMaintenance = robotStatus === 'maintenance';
             

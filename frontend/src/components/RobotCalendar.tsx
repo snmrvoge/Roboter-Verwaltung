@@ -6,18 +6,20 @@ import {
   Grid,
   IconButton,
   Stack,
+  Chip
 } from '@mui/material';
 import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material';
-import { Reservation } from '../types';
+import { Reservation, Robot } from '../types';
 
 interface RobotCalendarProps {
   reservations: Reservation[];
+  robots: Robot[];
 }
 
-const RobotCalendar: React.FC<RobotCalendarProps> = ({ reservations }) => {
+const RobotCalendar: React.FC<RobotCalendarProps> = ({ reservations, robots }) => {
   const [selectedDate, setSelectedDate] = React.useState<Date>(new Date());
   const [currentMonth, setCurrentMonth] = React.useState<Date>(new Date());
 
@@ -167,13 +169,17 @@ const RobotCalendar: React.FC<RobotCalendarProps> = ({ reservations }) => {
                 }}
               >
                 <Typography variant="subtitle1" gutterBottom>
-                  {reservation.robotId.name} - {reservation.eventName}
+                  {typeof reservation.robotId === 'string' 
+                    ? robots.find(r => r._id === reservation.robotId)?.name || 'Unbekannter Roboter'
+                    : (reservation.robotId as Robot).name} - {reservation.eventName}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Ort: {reservation.location}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Reserviert von: {reservation.userId.name}
+                  Reserviert von: {typeof reservation.userId === 'string'
+                    ? 'Unbekannter Benutzer'
+                    : (reservation.userId as any).name}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Zeit: {formatTime(new Date(reservation.startDate))} - {formatTime(new Date(reservation.endDate))}
