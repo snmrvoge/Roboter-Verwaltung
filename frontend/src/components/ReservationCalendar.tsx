@@ -164,7 +164,15 @@ export const ReservationCalendar: React.FC<ReservationCalendarProps> = ({
     };
   };
 
-  const slotPropGetter = (slotInfo: { start: Date; end: Date }) => {
+  const slotPropGetter = (date: Date) => {
+    // Für Monats- und Wochenansicht ist date ein einzelnes Datum
+    // Wir müssen den Zeitraum für diesen Slot berechnen
+    const slotStart = new Date(date);
+    const slotEnd = new Date(date);
+    
+    // Für die Tagesansicht setzen wir den Slot auf den ganzen Tag
+    slotEnd.setHours(slotStart.getHours() + 1);
+    
     // Finde alle Reservierungen, die sich mit diesem Zeitslot überschneiden
     const robot = robots.find(r => r._id === selectedRobot);
     if (!robot) return {};
@@ -177,9 +185,9 @@ export const ReservationCalendar: React.FC<ReservationCalendarProps> = ({
       const robotId = typeof reservation.robotId === 'string' ? reservation.robotId : reservation.robotId._id;
       return (
         robotId === robot._id &&
-        ((slotInfo.start >= reservationStart && slotInfo.start < reservationEnd) ||
-          (slotInfo.end > reservationStart && slotInfo.end <= reservationEnd) ||
-          (slotInfo.start <= reservationStart && slotInfo.end >= reservationEnd))
+        ((slotStart >= reservationStart && slotStart < reservationEnd) ||
+          (slotEnd > reservationStart && slotEnd <= reservationEnd) ||
+          (slotStart <= reservationStart && slotEnd >= reservationEnd))
       );
     });
     
