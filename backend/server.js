@@ -17,6 +17,76 @@ app.use(express.static(path.join(__dirname, '../frontend/build')));
 // Pfad zur JSON-Datenbankdatei
 const DB_PATH = path.join(__dirname, 'db.json');
 
+// Standarddaten für die Initialisierung
+const DEFAULT_DB = {
+  robots: {
+    "robot1": {
+      "name": "R2-D2",
+      "type": "Astromech",
+      "status": "available",
+      "description": "Ein zuverlässiger Astromech-Droide mit vielen nützlichen Werkzeugen."
+    },
+    "robot2": {
+      "name": "C-3PO",
+      "type": "Protokoll",
+      "status": "available",
+      "description": "Ein Protokolldroide, der über 6 Millionen Kommunikationsformen beherrscht."
+    },
+    "robot3": {
+      "name": "BB-8",
+      "type": "Astromech",
+      "status": "available",
+      "description": "Ein kugelförmiger Astromech-Droide mit einem hohen Maß an Unabhängigkeit."
+    },
+    "robot4": {
+      "name": "K-2SO",
+      "type": "Sicherheit",
+      "status": "available",
+      "description": "Ein umprogrammierter imperialer Sicherheitsdroide mit einer direkten Persönlichkeit."
+    }
+  },
+  users: {
+    "user1": {
+      "name": "Admin",
+      "email": "admin@example.com",
+      "password": "$2b$10$kLt72AD5xLOIst7N3Cd1HOUsCVolKk5GrflSC8TXcqsaiR4EQIFEy",
+      "role": "admin"
+    },
+    "user2": {
+      "name": "Test User",
+      "email": "user@example.com",
+      "password": "$2b$10$kLt72AD5xLOIst7N3Cd1HOUsCVolKk5GrflSC8TXcqsaiR4EQIFEy",
+      "role": "user"
+    }
+  },
+  reservations: {}
+};
+
+// Hilfsfunktion zum Initialisieren der Datenbank
+const initializeDatabase = () => {
+  try {
+    // Prüfen, ob die Datenbankdatei existiert
+    if (!fs.existsSync(DB_PATH)) {
+      console.log('Datenbank existiert nicht. Erstelle neue Datenbank mit Standarddaten...');
+      writeDatabase(DEFAULT_DB);
+      console.log('Datenbank erfolgreich initialisiert.');
+    } else {
+      // Prüfen, ob die Datenbank gültig ist
+      try {
+        const data = fs.readFileSync(DB_PATH, 'utf8');
+        JSON.parse(data);
+        console.log('Bestehende Datenbank erfolgreich geladen.');
+      } catch (error) {
+        console.error('Datenbank ist beschädigt. Erstelle neue Datenbank mit Standarddaten...', error);
+        writeDatabase(DEFAULT_DB);
+        console.log('Datenbank erfolgreich zurückgesetzt.');
+      }
+    }
+  } catch (error) {
+    console.error('Fehler bei der Initialisierung der Datenbank:', error);
+  }
+};
+
 // Hilfsfunktion zum Lesen der Datenbank
 const readDatabase = () => {
   try {
@@ -24,13 +94,21 @@ const readDatabase = () => {
     return JSON.parse(data);
   } catch (error) {
     console.error('Fehler beim Lesen der Datenbank:', error);
-    return { robots: {}, users: {}, reservations: {} };
+    // Bei Lesefehler Standarddaten zurückgeben und Datenbank neu initialisieren
+    initializeDatabase();
+    return DEFAULT_DB;
   }
 };
 
 // Hilfsfunktion zum Schreiben in die Datenbank
 const writeDatabase = (data) => {
   try {
+    // Sicherstellen, dass das Verzeichnis existiert
+    const dir = path.dirname(DB_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    
     fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf8');
     return true;
   } catch (error) {
@@ -461,6 +539,9 @@ app.get('/api/test', (req, res) => {
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
 });
+
+// Datenbank initialisieren
+initializeDatabase();
 
 // Server starten
 app.listen(PORT, () => {
