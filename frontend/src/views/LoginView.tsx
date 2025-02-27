@@ -29,7 +29,7 @@ export const LoginView: React.FC = () => {
 
     try {
       console.log('Login-Versuch mit:', email);
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      const response = await fetch(`${API_BASE_URL}/api/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -44,31 +44,11 @@ export const LoginView: React.FC = () => {
       const data = await response.json();
       console.log('Login erfolgreich:', data);
       
-      // Token und Benutzerinformationen speichern
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      
-      // Erfolgreiche Anmeldung
       await login(data.token, data.user);
-      
-      // Weiterleitung zur Hauptseite
       navigate('/dashboard');
-    } catch (err) {
-      console.error('Login-Fehler:', err);
-      setError('Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const testConnection = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch(`${API_BASE_URL}/api/test`);
-      const data = await response.json();
-      alert(`Server connection test: ${data.message}`);
-    } catch (err) {
-      alert(`Connection error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } catch (error) {
+      console.error('Login-Fehler:', error);
+      setError('Ungültige E-Mail oder Passwort');
     } finally {
       setIsLoading(false);
     }
@@ -76,66 +56,66 @@ export const LoginView: React.FC = () => {
 
   return (
     <Container maxWidth="sm">
-      <Box sx={{ mt: 8 }}>
+      <Box my={4}>
         <Paper elevation={3} sx={{ p: 4 }}>
-          <Typography component="h1" variant="h5" align="center" gutterBottom>
-            Roboter-Verwaltung Login
+          <Typography variant="h4" component="h1" gutterBottom align="center">
+            Roboter-Verwaltung
           </Typography>
           
-          <Box component="form" onSubmit={handleLogin} sx={{ mt: 2 }}>
-            {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            )}
-            
+          <Typography variant="h5" component="h2" gutterBottom align="center">
+            Anmelden
+          </Typography>
+          
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          
+          <form onSubmit={handleLogin}>
             <TextField
-              margin="normal"
-              required
+              label="E-Mail"
+              type="email"
               fullWidth
-              id="email"
-              label="E-Mail-Adresse"
-              name="email"
-              autoComplete="email"
-              autoFocus
+              margin="normal"
+              variant="outlined"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              required
             />
             
             <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
               label="Passwort"
               type="password"
-              id="password"
-              autoComplete="current-password"
+              fullWidth
+              margin="normal"
+              variant="outlined"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
             />
             
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2 }}
-              disabled={isLoading}
-            >
-              {isLoading ? <CircularProgress size={24} /> : 'Anmelden'}
-            </Button>
-
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={testConnection}
-              sx={{ mt: 1 }}
-              disabled={isLoading}
-            >
-              Test Server Connection
-            </Button>
+            <Box mt={2}>
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                fullWidth
+                disabled={isLoading}
+              >
+                {isLoading ? <CircularProgress size={24} /> : 'Anmelden'}
+              </Button>
+            </Box>
+          </form>
+          
+          <Box mt={2} textAlign="center">
+            <Typography variant="body2">
+              Standardbenutzer:<br />
+              Admin: admin@example.com / password123<br />
+              Benutzer: user@example.com / password123
+            </Typography>
           </Box>
         </Paper>
+        
+        <Box mt={4}>
+          <TestConnection />
+        </Box>
       </Box>
     </Container>
   );

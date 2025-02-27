@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Alert, Button, CircularProgress } from '@mui/material';
+import { Alert, Button, CircularProgress, Box, Typography, Paper } from '@mui/material';
 import { API_BASE_URL } from '../config';
 
 export const TestConnection: React.FC = () => {
@@ -9,8 +9,8 @@ export const TestConnection: React.FC = () => {
   const testConnection = async () => {
     setStatus('loading');
     try {
-      console.log('Testing connection to:', `${API_BASE_URL}/api/test`);
-      const response = await fetch(`${API_BASE_URL}/api/test`, {
+      console.log('Testing connection to:', `${API_BASE_URL}/api/robots`);
+      const response = await fetch(`${API_BASE_URL}/api/robots`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json'
@@ -18,15 +18,12 @@ export const TestConnection: React.FC = () => {
       });
 
       console.log('Response status:', response.status);
-      const text = await response.text();
-      console.log('Response text:', text);
-
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = JSON.parse(text);
-      setMessage(data.message);
+      setMessage('Verbindung zum Server erfolgreich hergestellt!');
       setStatus('success');
     } catch (error) {
       console.error('Connection test failed:', error);
@@ -36,21 +33,42 @@ export const TestConnection: React.FC = () => {
   };
 
   return (
-    <div style={{ marginTop: '20px', textAlign: 'center' }}>
-      <Button 
-        variant="contained" 
-        onClick={testConnection}
-        disabled={status === 'loading'}
-        style={{ marginBottom: '10px' }}
-      >
-        {status === 'loading' ? <CircularProgress size={24} /> : 'Test API Connection'}
-      </Button>
-
-      {status !== 'idle' && (
-        <Alert severity={status === 'success' ? 'success' : 'error'}>
-          {message}
-        </Alert>
-      )}
-    </div>
+    <Paper elevation={2} sx={{ p: 3 }}>
+      <Typography variant="h6" gutterBottom>
+        Verbindungstest
+      </Typography>
+      
+      <Typography variant="body2" sx={{ mb: 2 }}>
+        Klicken Sie auf den Button, um die Verbindung zum Server zu testen.
+      </Typography>
+      
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+        <Button 
+          variant="contained" 
+          color="primary"
+          onClick={testConnection}
+          disabled={status === 'loading'}
+          fullWidth
+        >
+          {status === 'loading' ? (
+            <CircularProgress size={24} color="inherit" />
+          ) : (
+            'Verbindung testen'
+          )}
+        </Button>
+        
+        {status === 'success' && (
+          <Alert severity="success" sx={{ width: '100%' }}>
+            {message}
+          </Alert>
+        )}
+        
+        {status === 'error' && (
+          <Alert severity="error" sx={{ width: '100%' }}>
+            Verbindungsfehler: {message}
+          </Alert>
+        )}
+      </Box>
+    </Paper>
   );
 };
