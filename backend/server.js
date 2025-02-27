@@ -250,6 +250,14 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// Zusätzliche Route für /api/login, die auf /api/auth/login umleitet
+app.post('/api/login', (req, res) => {
+  console.log('Redirecting from /api/login to /api/auth/login');
+  // Weiterleitung der Anfrage an den korrekten Endpunkt
+  req.url = '/api/auth/login';
+  app._router.handle(req, res);
+});
+
 // Validierungsroute für Token
 app.get('/api/auth/validate', authenticateToken, (req, res) => {
   try {
