@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
 const authRoutes = require('./routes/auth');
 const robotRoutes = require('./routes/robots');
 
@@ -12,7 +13,9 @@ const app = express();
 
 // CORS configuration
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://roboter-verwaltung-2025.uc.r.appspot.com', 'https://roboter-verwaltung-2025.appspot.com'] 
+    : 'http://localhost:3000',
   credentials: false,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -30,6 +33,17 @@ app.get('/api/test', (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/robots', robotRoutes);
+
+// Serve static files from the React app in production
+if (process.env.NODE_ENV === 'production') {
+  // Serve static files
+  app.use(express.static(path.join(__dirname, '../frontend/build')));
+
+  // For any request that doesn't match an API route, serve the React app
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+  });
+}
 
 // Error Handler
 app.use((err, req, res, next) => {
@@ -51,8 +65,8 @@ mongoose.connect(MONGODB_URI)
     const PORT = process.env.PORT || 3001;
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
-      console.log('CORS Origin: http://localhost:3000');
-      console.log('MongoDB URI:', MONGODB_URI);
+      console.log(`CORS Origin: ${process.env.NODE_ENV === 'production' ? 'Production URLs' : 'http://localhost:3000'}`);
+      console.log('MongoDB URI:', MONGODB_URI.replace(/\/\/([^:]+):([^@]+)@/, '//****:****@')); // Hide credentials in logs
     });
   })
   .catch(err => {

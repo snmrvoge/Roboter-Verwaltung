@@ -1,0 +1,23 @@
+runtime: nodejs18
+service: default
+
+handlers:
+  - url: /api/.*
+    script: auto
+    secure: always
+
+  - url: /(.*\.(js|css|png|jpg|jpeg|gif|ico|json|svg|woff|woff2|ttf|eot))$
+    static_files: frontend/build/\1
+    upload: frontend/build/.*\.(js|css|png|jpg|jpeg|gif|ico|json|svg|woff|woff2|ttf|eot)$
+    secure: always
+
+  - url: /.*
+    static_files: frontend/build/index.html
+    upload: frontend/build/index.html
+    secure: always
+
+env_variables:
+  NODE_ENV: "production"
+  MONGODB_URI: "mongodb+srv://roboter-verwaltung:roboter-verwaltung-password@cluster0.mongodb.net/roboter-verwaltung?retryWrites=true&w=majority"
+  JWT_SECRET: "your-super-secret-key-change-this-in-production"
+  PORT: "8080"
