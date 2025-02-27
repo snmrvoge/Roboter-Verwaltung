@@ -113,9 +113,62 @@ app.post('/api/robots', (req, res) => {
   res.status(201).json(newRobot);
 });
 
+app.put('/api/robots/:id', (req, res) => {
+  console.log(`=== Update Robot Request for ID ${req.params.id} ===`);
+  console.log('Request body:', req.body);
+  
+  const robotId = parseInt(req.params.id);
+  const robotIndex = db.robots.findIndex(r => r.id === robotId);
+  
+  if (robotIndex === -1) {
+    return res.status(404).json({ message: 'Roboter nicht gefunden' });
+  }
+  
+  db.robots[robotIndex] = {
+    ...db.robots[robotIndex],
+    ...req.body,
+    id: robotId // ID bleibt unverändert
+  };
+  
+  res.json(db.robots[robotIndex]);
+});
+
+app.delete('/api/robots/:id', (req, res) => {
+  console.log(`=== Delete Robot Request for ID ${req.params.id} ===`);
+  
+  const robotId = parseInt(req.params.id);
+  const robotIndex = db.robots.findIndex(r => r.id === robotId);
+  
+  if (robotIndex === -1) {
+    return res.status(404).json({ message: 'Roboter nicht gefunden' });
+  }
+  
+  db.robots.splice(robotIndex, 1);
+  res.status(204).send();
+});
+
 // Reservierungs-Routen
 app.get('/api/robots/reservations', (req, res) => {
   res.json(db.reservations);
+});
+
+app.post('/api/robots/reservations', (req, res) => {
+  console.log('=== Create Reservation Request ===');
+  console.log('Request body:', req.body);
+  
+  const newId = db.reservations.length > 0 ? Math.max(...db.reservations.map(r => r.id)) + 1 : 1;
+  
+  const newReservation = {
+    id: newId,
+    robotId: req.body.robotId,
+    userId: req.body.userId,
+    startDate: req.body.startDate,
+    endDate: req.body.endDate,
+    purpose: req.body.purpose
+  };
+  
+  db.reservations.push(newReservation);
+  res.status(201).json(newReservation);
 });
 
 // Benutzer-Routen
