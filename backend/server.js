@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // Middleware
@@ -450,6 +450,11 @@ app.delete('/api/reservations/:id', authenticateToken, (req, res) => {
     console.error('Fehler beim Löschen der Reservierung:', error);
     res.status(500).json({ message: 'Serverfehler beim Löschen der Reservierung' });
   }
+});
+
+// Test-Endpunkt
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'API-Verbindung erfolgreich!' });
 });
 
 // Catch-all-Route für das Frontend

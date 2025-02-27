@@ -9,8 +9,8 @@ export const TestConnection: React.FC = () => {
   const testConnection = async () => {
     setStatus('loading');
     try {
-      console.log('Testing connection to:', `${API_BASE_URL}/api/robots`);
-      const response = await fetch(`${API_BASE_URL}/api/robots`, {
+      console.log('Testing connection to:', `${API_BASE_URL}/api/test`);
+      const response = await fetch(`${API_BASE_URL}/api/test`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json'
@@ -23,7 +23,8 @@ export const TestConnection: React.FC = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      setMessage('Verbindung zum Server erfolgreich hergestellt!');
+      const data = await response.json();
+      setMessage(data.message || 'Verbindung zum Server erfolgreich hergestellt!');
       setStatus('success');
     } catch (error) {
       console.error('Connection test failed:', error);
