@@ -1,299 +1,463 @@
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
-const path = require('path');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-
-// Firebase DB Models
-const { robotModel, reservationModel, userModel } = require('./firebase-db');
-
-// Load environment variables
-dotenv.config();
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
-
-// CORS configuration
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://roboter-verwaltung-2025.ew.r.appspot.com', 'https://roboter-verwaltung-2025.appspot.com'] 
-    : 'http://localhost:3000',
-  credentials: false,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+const PORT = process.env.PORT || 8080;
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // Middleware
+app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, '../frontend/build')));
 
-// Authentication middleware
+// Pfad zur JSON-Datenbankdatei
+const DB_PATH = path.join(__dirname, 'db.json');
+
+// Hilfsfunktion zum Lesen der Datenbank
+const readDatabase = () => {
+  try {
+    const data = fs.readFileSync(DB_PATH, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Fehler beim Lesen der Datenbank:', error);
+    return { robots: {}, users: {}, reservations: {} };
+  }
+};
+
+// Hilfsfunktion zum Schreiben in die Datenbank
+const writeDatabase = (data) => {
+  try {
+    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf8');
+    return true;
+  } catch (error) {
+    console.error('Fehler beim Schreiben in die Datenbank:', error);
+    return false;
+  }
+};
+
+// Middleware zur Authentifizierung
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   
-  if (!token) return res.status(401).json({ message: 'No token provided' });
+  if (!token) {
+    return res.status(401).json({ message: 'Nicht authentifiziert' });
+  }
   
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ message: 'Invalid token' });
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ message: 'Token ungültig' });
+    }
     req.user = user;
     next();
   });
 };
 
-// Auth Routes
-app.post('/api/auth/register', async (req, res) => {
+// Middleware für Admin-Rechte
+const isAdmin = (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Keine Berechtigung' });
+  }
+  next();
+};
+
+// Routen
+
+// Registrierung
+app.post('/api/register', async (req, res) => {
   try {
     const { name, email, password } = req.body;
     
-    // Check if user already exists
-    const existingUser = await userModel.getByEmail(email);
-    if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
+    const db = readDatabase();
+    
+    // Prüfen, ob E-Mail bereits existiert
+    const userExists = Object.values(db.users).some(user => user.email === email);
+    if (userExists) {
+      return res.status(400).json({ message: 'Benutzer existiert bereits' });
     }
     
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    // Passwort hashen
+    const hashedPassword = await bcrypt.hash(password, 10);
     
-    // Create user
-    const user = await userModel.create({
+    // Neuen Benutzer erstellen
+    const newUserId = `user${Date.now()}`;
+    db.users[newUserId] = {
       name,
       email,
       password: hashedPassword,
-      role: 'user',
-      createdAt: new Date().toISOString()
-    });
+      role: 'user' // Standardrolle
+    };
     
-    // Generate token
-    const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    writeDatabase(db);
     
-    res.status(201).json({
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      }
-    });
+    res.status(201).json({ message: 'Benutzer erfolgreich registriert' });
   } catch (error) {
-    console.error('Register error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Fehler bei der Registrierung:', error);
+    res.status(500).json({ message: 'Serverfehler bei der Registrierung' });
   }
 });
 
-app.post('/api/auth/login', async (req, res) => {
+// Login
+app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    // Find user
-    const user = await userModel.getByEmail(email);
+    const db = readDatabase();
+    
+    // Benutzer finden
+    const user = Object.entries(db.users).find(([_, user]) => user.email === email);
+    
     if (!user) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({ message: 'Ungültige Anmeldedaten' });
     }
     
-    // Check password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+    const [userId, userData] = user;
+    
+    // Passwort überprüfen
+    const validPassword = await bcrypt.compare(password, userData.password);
+    if (!validPassword) {
+      return res.status(400).json({ message: 'Ungültige Anmeldedaten' });
     }
     
-    // Generate token
+    // Token erstellen
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { id: userId, name: userData.name, email: userData.email, role: userData.role },
+      JWT_SECRET,
+      { expiresIn: '1h' }
     );
     
     res.json({
       token,
       user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role
+        id: userId,
+        name: userData.name,
+        email: userData.email,
+        role: userData.role
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Fehler beim Login:', error);
+    res.status(500).json({ message: 'Serverfehler beim Login' });
   }
 });
 
-// Robot Routes
-app.get('/api/robots', async (req, res) => {
+// Roboter-Routen
+
+// Alle Roboter abrufen
+app.get('/api/robots', authenticateToken, (req, res) => {
   try {
-    const robots = await robotModel.getAll();
-    res.json(Object.entries(robots).map(([id, robot]) => ({ id, ...robot })));
+    const db = readDatabase();
+    const robots = Object.entries(db.robots).map(([id, robot]) => ({
+      id,
+      ...robot
+    }));
+    res.json(robots);
   } catch (error) {
-    console.error('Get robots error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Fehler beim Abrufen der Roboter:', error);
+    res.status(500).json({ message: 'Serverfehler beim Abrufen der Roboter' });
   }
 });
 
-app.get('/api/robots/:id', async (req, res) => {
+// Einen Roboter abrufen
+app.get('/api/robots/:id', authenticateToken, (req, res) => {
   try {
-    const robot = await robotModel.getById(req.params.id);
-    if (!robot) {
-      return res.status(404).json({ message: 'Robot not found' });
+    const { id } = req.params;
+    const db = readDatabase();
+    
+    if (!db.robots[id]) {
+      return res.status(404).json({ message: 'Roboter nicht gefunden' });
     }
-    res.json({ id: req.params.id, ...robot });
+    
+    res.json({ id, ...db.robots[id] });
   } catch (error) {
-    console.error('Get robot error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Fehler beim Abrufen des Roboters:', error);
+    res.status(500).json({ message: 'Serverfehler beim Abrufen des Roboters' });
   }
 });
 
-app.post('/api/robots', authenticateToken, async (req, res) => {
+// Roboter erstellen (nur Admin)
+app.post('/api/robots', authenticateToken, isAdmin, (req, res) => {
   try {
-    const robot = await robotModel.create(req.body);
-    res.status(201).json(robot);
+    const { name, type, description } = req.body;
+    const db = readDatabase();
+    
+    const newRobotId = `robot${Date.now()}`;
+    db.robots[newRobotId] = {
+      name,
+      type,
+      status: 'available',
+      description
+    };
+    
+    writeDatabase(db);
+    
+    res.status(201).json({ id: newRobotId, ...db.robots[newRobotId] });
   } catch (error) {
-    console.error('Create robot error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Fehler beim Erstellen des Roboters:', error);
+    res.status(500).json({ message: 'Serverfehler beim Erstellen des Roboters' });
   }
 });
 
-app.put('/api/robots/:id', authenticateToken, async (req, res) => {
+// Roboter aktualisieren (nur Admin)
+app.put('/api/robots/:id', authenticateToken, isAdmin, (req, res) => {
   try {
-    const robot = await robotModel.update(req.params.id, req.body);
-    res.json(robot);
-  } catch (error) {
-    console.error('Update robot error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-app.delete('/api/robots/:id', authenticateToken, async (req, res) => {
-  try {
-    await robotModel.delete(req.params.id);
-    res.json({ message: 'Robot deleted' });
-  } catch (error) {
-    console.error('Delete robot error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Reservation Routes
-app.get('/api/reservations', async (req, res) => {
-  try {
-    const reservations = await reservationModel.getAll();
-    res.json(Object.entries(reservations).map(([id, reservation]) => ({ id, ...reservation })));
-  } catch (error) {
-    console.error('Get reservations error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-app.get('/api/reservations/:id', async (req, res) => {
-  try {
-    const reservation = await reservationModel.getById(req.params.id);
-    if (!reservation) {
-      return res.status(404).json({ message: 'Reservation not found' });
+    const { id } = req.params;
+    const { name, type, status, description } = req.body;
+    const db = readDatabase();
+    
+    if (!db.robots[id]) {
+      return res.status(404).json({ message: 'Roboter nicht gefunden' });
     }
-    res.json({ id: req.params.id, ...reservation });
+    
+    db.robots[id] = {
+      name: name || db.robots[id].name,
+      type: type || db.robots[id].type,
+      status: status || db.robots[id].status,
+      description: description || db.robots[id].description
+    };
+    
+    writeDatabase(db);
+    
+    res.json({ id, ...db.robots[id] });
   } catch (error) {
-    console.error('Get reservation error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Fehler beim Aktualisieren des Roboters:', error);
+    res.status(500).json({ message: 'Serverfehler beim Aktualisieren des Roboters' });
   }
 });
 
-app.post('/api/reservations', authenticateToken, async (req, res) => {
+// Roboter löschen (nur Admin)
+app.delete('/api/robots/:id', authenticateToken, isAdmin, (req, res) => {
   try {
-    const reservation = await reservationModel.create({
-      ...req.body,
+    const { id } = req.params;
+    const db = readDatabase();
+    
+    if (!db.robots[id]) {
+      return res.status(404).json({ message: 'Roboter nicht gefunden' });
+    }
+    
+    // Prüfen, ob Reservierungen für diesen Roboter existieren
+    const hasReservations = Object.values(db.reservations).some(res => res.robotId === id);
+    if (hasReservations) {
+      return res.status(400).json({ message: 'Roboter hat aktive Reservierungen und kann nicht gelöscht werden' });
+    }
+    
+    delete db.robots[id];
+    writeDatabase(db);
+    
+    res.json({ message: 'Roboter erfolgreich gelöscht' });
+  } catch (error) {
+    console.error('Fehler beim Löschen des Roboters:', error);
+    res.status(500).json({ message: 'Serverfehler beim Löschen des Roboters' });
+  }
+});
+
+// Reservierungs-Routen
+
+// Alle Reservierungen abrufen
+app.get('/api/reservations', authenticateToken, (req, res) => {
+  try {
+    const db = readDatabase();
+    let reservations;
+    
+    if (req.user.role === 'admin') {
+      // Admin sieht alle Reservierungen
+      reservations = Object.entries(db.reservations).map(([id, reservation]) => ({
+        id,
+        ...reservation
+      }));
+    } else {
+      // Benutzer sieht nur eigene Reservierungen
+      reservations = Object.entries(db.reservations)
+        .filter(([_, reservation]) => reservation.userId === req.user.id)
+        .map(([id, reservation]) => ({
+          id,
+          ...reservation
+        }));
+    }
+    
+    res.json(reservations);
+  } catch (error) {
+    console.error('Fehler beim Abrufen der Reservierungen:', error);
+    res.status(500).json({ message: 'Serverfehler beim Abrufen der Reservierungen' });
+  }
+});
+
+// Eine Reservierung abrufen
+app.get('/api/reservations/:id', authenticateToken, (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = readDatabase();
+    
+    if (!db.reservations[id]) {
+      return res.status(404).json({ message: 'Reservierung nicht gefunden' });
+    }
+    
+    // Prüfen, ob Benutzer Zugriff hat
+    if (req.user.role !== 'admin' && db.reservations[id].userId !== req.user.id) {
+      return res.status(403).json({ message: 'Keine Berechtigung' });
+    }
+    
+    res.json({ id, ...db.reservations[id] });
+  } catch (error) {
+    console.error('Fehler beim Abrufen der Reservierung:', error);
+    res.status(500).json({ message: 'Serverfehler beim Abrufen der Reservierung' });
+  }
+});
+
+// Reservierung erstellen
+app.post('/api/reservations', authenticateToken, (req, res) => {
+  try {
+    const { title, start, end, robotId, description } = req.body;
+    const db = readDatabase();
+    
+    // Prüfen, ob Roboter existiert
+    if (!db.robots[robotId]) {
+      return res.status(404).json({ message: 'Roboter nicht gefunden' });
+    }
+    
+    // Prüfen, ob Roboter verfügbar ist
+    if (db.robots[robotId].status !== 'available') {
+      return res.status(400).json({ message: 'Roboter ist nicht verfügbar' });
+    }
+    
+    // Prüfen, ob Zeitraum verfügbar ist
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    
+    const isOverlapping = Object.values(db.reservations).some(reservation => {
+      if (reservation.robotId !== robotId) return false;
+      
+      const resStart = new Date(reservation.start);
+      const resEnd = new Date(reservation.end);
+      
+      return (startDate < resEnd && endDate > resStart);
+    });
+    
+    if (isOverlapping) {
+      return res.status(400).json({ message: 'Zeitraum ist bereits reserviert' });
+    }
+    
+    // Neue Reservierung erstellen
+    const newReservationId = `res${Date.now()}`;
+    db.reservations[newReservationId] = {
+      title,
+      start,
+      end,
+      robotId,
       userId: req.user.id,
-      createdAt: new Date().toISOString()
-    });
-    res.status(201).json(reservation);
+      description
+    };
+    
+    writeDatabase(db);
+    
+    res.status(201).json({ id: newReservationId, ...db.reservations[newReservationId] });
   } catch (error) {
-    console.error('Create reservation error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Fehler beim Erstellen der Reservierung:', error);
+    res.status(500).json({ message: 'Serverfehler beim Erstellen der Reservierung' });
   }
 });
 
-app.put('/api/reservations/:id', authenticateToken, async (req, res) => {
+// Reservierung aktualisieren
+app.put('/api/reservations/:id', authenticateToken, (req, res) => {
   try {
-    const reservation = await reservationModel.getById(req.params.id);
+    const { id } = req.params;
+    const { title, start, end, robotId, description } = req.body;
+    const db = readDatabase();
     
-    // Check if reservation exists
-    if (!reservation) {
-      return res.status(404).json({ message: 'Reservation not found' });
+    if (!db.reservations[id]) {
+      return res.status(404).json({ message: 'Reservierung nicht gefunden' });
     }
     
-    // Check if user is authorized
-    if (reservation.userId !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized' });
+    // Prüfen, ob Benutzer Zugriff hat
+    if (req.user.role !== 'admin' && db.reservations[id].userId !== req.user.id) {
+      return res.status(403).json({ message: 'Keine Berechtigung' });
     }
     
-    const updatedReservation = await reservationModel.update(req.params.id, {
-      ...req.body,
-      updatedAt: new Date().toISOString()
-    });
+    // Wenn Roboter geändert wird, prüfen ob er existiert
+    if (robotId && robotId !== db.reservations[id].robotId) {
+      if (!db.robots[robotId]) {
+        return res.status(404).json({ message: 'Roboter nicht gefunden' });
+      }
+      
+      if (db.robots[robotId].status !== 'available') {
+        return res.status(400).json({ message: 'Roboter ist nicht verfügbar' });
+      }
+    }
     
-    res.json(updatedReservation);
+    // Wenn Zeitraum geändert wird, prüfen ob er verfügbar ist
+    if ((start && start !== db.reservations[id].start) || (end && end !== db.reservations[id].end)) {
+      const startDate = new Date(start || db.reservations[id].start);
+      const endDate = new Date(end || db.reservations[id].end);
+      const currentRobotId = robotId || db.reservations[id].robotId;
+      
+      const isOverlapping = Object.entries(db.reservations).some(([resId, reservation]) => {
+        if (resId === id || reservation.robotId !== currentRobotId) return false;
+        
+        const resStart = new Date(reservation.start);
+        const resEnd = new Date(reservation.end);
+        
+        return (startDate < resEnd && endDate > resStart);
+      });
+      
+      if (isOverlapping) {
+        return res.status(400).json({ message: 'Zeitraum ist bereits reserviert' });
+      }
+    }
+    
+    // Reservierung aktualisieren
+    db.reservations[id] = {
+      title: title || db.reservations[id].title,
+      start: start || db.reservations[id].start,
+      end: end || db.reservations[id].end,
+      robotId: robotId || db.reservations[id].robotId,
+      userId: db.reservations[id].userId,
+      description: description || db.reservations[id].description
+    };
+    
+    writeDatabase(db);
+    
+    res.json({ id, ...db.reservations[id] });
   } catch (error) {
-    console.error('Update reservation error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Fehler beim Aktualisieren der Reservierung:', error);
+    res.status(500).json({ message: 'Serverfehler beim Aktualisieren der Reservierung' });
   }
 });
 
-app.delete('/api/reservations/:id', authenticateToken, async (req, res) => {
+// Reservierung löschen
+app.delete('/api/reservations/:id', authenticateToken, (req, res) => {
   try {
-    const reservation = await reservationModel.getById(req.params.id);
+    const { id } = req.params;
+    const db = readDatabase();
     
-    // Check if reservation exists
-    if (!reservation) {
-      return res.status(404).json({ message: 'Reservation not found' });
+    if (!db.reservations[id]) {
+      return res.status(404).json({ message: 'Reservierung nicht gefunden' });
     }
     
-    // Check if user is authorized
-    if (reservation.userId !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized' });
+    // Prüfen, ob Benutzer Zugriff hat
+    if (req.user.role !== 'admin' && db.reservations[id].userId !== req.user.id) {
+      return res.status(403).json({ message: 'Keine Berechtigung' });
     }
     
-    await reservationModel.delete(req.params.id);
-    res.json({ message: 'Reservation deleted' });
+    delete db.reservations[id];
+    writeDatabase(db);
+    
+    res.json({ message: 'Reservierung erfolgreich gelöscht' });
   } catch (error) {
-    console.error('Delete reservation error:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Fehler beim Löschen der Reservierung:', error);
+    res.status(500).json({ message: 'Serverfehler beim Löschen der Reservierung' });
   }
 });
 
-// Test Route
-app.get('/api/test', (req, res) => {
-  console.log('Test endpoint called');
-  res.json({ message: 'API is working!' });
+// Catch-all-Route für das Frontend
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
 });
 
-// Serve static files from the React app in production
-if (process.env.NODE_ENV === 'production') {
-  // Serve static files
-  app.use(express.static(path.join(__dirname, '../frontend/build')));
-
-  // For any request that doesn't match an API route, serve the React app
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
-  });
-}
-
-// Error Handler
-app.use((err, req, res, next) => {
-  console.error('Global error handler:', err);
-  res.status(500).json({ 
-    message: 'Internal Server Error', 
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined 
-  });
-});
-
-// Start server
-const PORT = process.env.PORT || 3001;
+// Server starten
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`CORS Origin: ${process.env.NODE_ENV === 'production' ? 'Production URLs' : 'http://localhost:3000'}`);
-  console.log('Database: Firebase Realtime Database');
+  console.log(`Server läuft auf Port ${PORT}`);
 });

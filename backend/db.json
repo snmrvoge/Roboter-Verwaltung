@@ -1,0 +1,60 @@
+{
+  "robots": {
+    "robot1": {
+      "name": "R2-D2",
+      "type": "Astromech",
+      "status": "available",
+      "description": "Ein zuverlässiger Astromech-Droide mit vielen nützlichen Werkzeugen."
+    },
+    "robot2": {
+      "name": "C-3PO",
+      "type": "Protokoll",
+      "status": "available",
+      "description": "Ein Protokolldroide, der über 6 Millionen Kommunikationsformen beherrscht."
+    },
+    "robot3": {
+      "name": "BB-8",
+      "type": "Astromech",
+      "status": "available",
+      "description": "Ein kugelförmiger Astromech-Droide mit einem hohen Maß an Unabhängigkeit."
+    },
+    "robot4": {
+      "name": "K-2SO",
+      "type": "Sicherheit",
+      "status": "available",
+      "description": "Ein umprogrammierter imperialer Sicherheitsdroide mit einer direkten Persönlichkeit."
+    }
+  },
+  "users": {
+    "user1": {
+      "name": "Admin",
+      "email": "admin@example.com",
+      "password": "$2a$10$XQxBJJqhVm4P4eEKiC5gqeYtZHFXmErMQYgB9uHxT2WKSd6K.Bwwm",
+      "role": "admin"
+    },
+    "user2": {
+      "name": "Test User",
+      "email": "user@example.com",
+      "password": "$2a$10$XQxBJJqhVm4P4eEKiC5gqeYtZHFXmErMQYgB9uHxT2WKSd6K.Bwwm",
+      "role": "user"
+    }
+  },
+  "reservations": {
+    "res1": {
+      "title": "Forschungsprojekt",
+      "start": "2025-03-01T09:00:00.000Z",
+      "end": "2025-03-01T17:00:00.000Z",
+      "robotId": "robot1",
+      "userId": "user1",
+      "description": "Verwendung für Forschungszwecke im Labor."
+    },
+    "res2": {
+      "title": "Präsentation",
+      "start": "2025-03-03T10:00:00.000Z",
+      "end": "2025-03-03T12:00:00.000Z",
+      "robotId": "robot2",
+      "userId": "user2",
+      "description": "Präsentation für potenzielle Investoren."
+    }
+  }
+}
