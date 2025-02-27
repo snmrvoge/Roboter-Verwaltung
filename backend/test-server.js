@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -14,6 +15,9 @@ app.use(cors({
 
 // Middleware
 app.use(express.json());
+
+// Statische Dateien aus dem Frontend-Build-Verzeichnis bereitstellen
+app.use(express.static(path.join(__dirname, '../frontend/build')));
 
 // Test Route
 app.get('/api/test', (req, res) => {
@@ -39,9 +43,52 @@ app.post('/api/auth/login', (req, res) => {
   });
 });
 
-// Catch-all route
+// Zusätzliche Route für /api/login, die auf /api/auth/login umleitet
+app.post('/api/login', (req, res) => {
+  console.log('Redirecting from /api/login to /api/auth/login');
+  // Weiterleitung der Anfrage an den korrekten Endpunkt
+  req.url = '/api/auth/login';
+  app._router.handle(req, res);
+});
+
+// Dummy-Routen für die Frontend-Anwendung
+app.get('/api/robots', (req, res) => {
+  res.json([
+    {
+      id: 1,
+      name: "R2-D2",
+      type: "Astromech",
+      status: "Verfügbar",
+      location: "Hauptgebäude"
+    },
+    {
+      id: 2,
+      name: "C-3PO",
+      type: "Protokoll",
+      status: "Verfügbar",
+      location: "Konferenzraum"
+    }
+  ]);
+});
+
+app.get('/api/robots/reservations', (req, res) => {
+  res.json([]);
+});
+
+app.get('/api/auth/validate', (req, res) => {
+  res.json({
+    user: {
+      id: '1',
+      name: 'Test User',
+      email: 'test@example.com',
+      role: 'admin'
+    }
+  });
+});
+
+// Catch-all route für das Frontend
 app.get('*', (req, res) => {
-  res.json({ message: 'Roboter-Verwaltung Test-API Server' });
+  res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
 });
 
 // Start server
