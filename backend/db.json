@@ -29,13 +29,13 @@
     "user1": {
       "name": "Admin",
       "email": "admin@example.com",
-      "password": "$2a$10$XQxBJJqhVm4P4eEKiC5gqeYtZHFXmErMQYgB9uHxT2WKSd6K.Bwwm",
+      "password": "$2b$10$kLt72AD5xLOIst7N3Cd1HOUsCVolKk5GrflSC8TXcqsaiR4EQIFEy",
       "role": "admin"
     },
     "user2": {
       "name": "Test User",
       "email": "user@example.com",
-      "password": "$2a$10$XQxBJJqhVm4P4eEKiC5gqeYtZHFXmErMQYgB9uHxT2WKSd6K.Bwwm",
+      "password": "$2b$10$kLt72AD5xLOIst7N3Cd1HOUsCVolKk5GrflSC8TXcqsaiR4EQIFEy",
       "role": "user"
     }
   },
