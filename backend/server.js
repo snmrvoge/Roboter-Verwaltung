@@ -194,7 +194,7 @@ app.post('/api/register', async (req, res) => {
 });
 
 // Login
-app.post('/api/login', async (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
@@ -244,6 +244,36 @@ app.post('/api/login', async (req, res) => {
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Serverfehler beim Login' });
+  }
+});
+
+// Validierungsroute für Token
+app.get('/api/auth/validate', authenticateToken, (req, res) => {
+  try {
+    console.log('Token validation request received');
+    // Wenn wir hier sind, wurde das Token bereits validiert
+    // Benutzer aus der Datenbank abrufen
+    const db = readDatabase();
+    const userId = req.user.id;
+    const userEntry = db.users[userId] || Object.values(db.users).find(u => u.id === userId);
+    
+    if (!userEntry) {
+      console.log(`User not found for id: ${userId}`);
+      return res.status(404).json({ message: 'Benutzer nicht gefunden' });
+    }
+    
+    // Benutzerinformationen zurückgeben
+    res.json({
+      user: {
+        id: userEntry.id,
+        name: userEntry.name,
+        email: userEntry.email,
+        role: userEntry.role
+      }
+    });
+  } catch (error) {
+    console.error('Token validation error:', error);
+    res.status(500).json({ message: 'Serverfehler bei der Token-Validierung' });
   }
 });
 
