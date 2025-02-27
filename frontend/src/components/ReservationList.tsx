@@ -4,14 +4,16 @@ import {
   ListItem,
   ListItemText,
   IconButton,
-  Box,
   Typography,
-  Chip
+  Box,
+  Chip,
+  Divider,
 } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import WarningIcon from '@mui/icons-material/Warning';
-import { Reservation } from '../types';
+import { format } from 'date-fns';
+import { Reservation, Robot } from '../types';
 
 interface ReservationListProps {
   reservations: Reservation[];
@@ -81,9 +83,11 @@ export const ReservationList: React.FC<ReservationListProps> = ({
               <Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
                   <Typography variant="body2" color="text.secondary">
-                    Roboter: {reservation.robotId?.name || 'Unbekannter Roboter'}
+                    Roboter: {typeof reservation.robotId === 'string' 
+                      ? 'Unbekannter Roboter' 
+                      : (reservation.robotId as any).name || 'Unbekannter Roboter'}
                   </Typography>
-                  {reservation.robotId?.status === 'maintenance' && (
+                  {typeof reservation.robotId !== 'string' && (reservation.robotId as any).status === 'maintenance' && (
                     <Chip
                       label="In Wartung"
                       color="warning"

@@ -6,6 +6,7 @@ export interface Robot {
   status: string;
   color: string; // Hinzugefügt für die Kalenderansicht
   homebase: string;
+  type?: string; // Für Kompatibilität mit bestehenden Komponenten
 }
 
 export interface Reservation {

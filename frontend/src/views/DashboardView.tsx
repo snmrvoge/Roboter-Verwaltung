@@ -32,6 +32,7 @@ import { EditRobotModal } from '../components/EditRobotModal';
 import { ReservationList } from '../components/ReservationList';
 import { ReservationCalendar } from '../components/ReservationCalendar';
 import { Robot, Reservation, User } from '../types';
+import { CalendarEvent } from '../components/ReservationCalendar';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 import { PasswordChangeModal } from '../components/PasswordChangeModal';
@@ -78,8 +79,8 @@ const DashboardView: React.FC = () => {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [selectedRobot, setSelectedRobot] = useState<Robot | null>(null);
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
-  const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(null);
-  const [selectedEndDate, setSelectedEndDate] = useState<Date | null>(null);
+  const [selectedStartDate, setSelectedStartDate] = useState<Date | undefined>(null as unknown as undefined);
+  const [selectedEndDate, setSelectedEndDate] = useState<Date | undefined>(null as unknown as undefined);
   const [isReservationModalOpen, setIsReservationModalOpen] = useState(false);
   const [isAddRobotModalOpen, setIsAddRobotModalOpen] = useState(false);
   const [isEditRobotModalOpen, setIsEditRobotModalOpen] = useState(false);
@@ -200,7 +201,9 @@ const DashboardView: React.FC = () => {
       <List>
         {reservations.map((reservation: Reservation) => {
           if (!reservation) return null;
-          const robotName = reservation.robotId?.name || 'Unbekannter Roboter';
+          const robotName = typeof reservation.robotId === 'string'
+            ? 'Unbekannter Roboter'
+            : (reservation.robotId as Robot).name || 'Unbekannter Roboter';
           
           return (
             <ListItem
@@ -331,7 +334,10 @@ const DashboardView: React.FC = () => {
         const end = new Date(reservation.endDate);
         
         if (start <= now && end >= now) {
-          robotUpdates.set(reservation.robotId._id, 'reserved');
+          const robotId = typeof reservation.robotId === 'string'
+            ? reservation.robotId
+            : (reservation.robotId as Robot)._id;
+          robotUpdates.set(robotId, 'reserved');
         }
       });
       
@@ -382,8 +388,8 @@ const DashboardView: React.FC = () => {
     setIsReservationModalOpen(false);
     setSelectedRobot(null);
     setSelectedReservation(null);
-    setSelectedStartDate(null);
-    setSelectedEndDate(null);
+    setSelectedStartDate(undefined);
+    setSelectedEndDate(undefined);
     await fetchReservations();
     await fetchRobots();
   };
@@ -478,9 +484,16 @@ const DashboardView: React.FC = () => {
 
   const handleEditReservation = (reservation: Reservation) => {
     setSelectedReservation(reservation);
-    setSelectedRobot(reservation.robotId);
-    setSelectedStartDate(null); // Reset der ausgewählten Daten, da sie aus der Reservierung kommen
-    setSelectedEndDate(null);
+    // Wenn robotId ein String ist, finde den entsprechenden Roboter
+    if (typeof reservation.robotId === 'string') {
+      const robot = robots.find(r => r._id === reservation.robotId);
+      setSelectedRobot(robot || null);
+    } else {
+      // Wenn robotId bereits ein Robot-Objekt ist
+      setSelectedRobot(reservation.robotId as Robot);
+    }
+    setSelectedStartDate(undefined); // Reset der ausgewählten Daten, da sie aus der Reservierung kommen
+    setSelectedEndDate(undefined);
     setIsReservationModalOpen(true);
   };
 
@@ -1027,8 +1040,8 @@ const DashboardView: React.FC = () => {
           setIsReservationModalOpen(false);
           setSelectedReservation(null);
           setSelectedRobot(null);
-          setSelectedStartDate(null);
-          setSelectedEndDate(null);
+          setSelectedStartDate(undefined);
+          setSelectedEndDate(undefined);
         }}
         onCreate={async (data) => {
           try {

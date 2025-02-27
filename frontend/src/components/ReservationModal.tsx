@@ -67,7 +67,10 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
     if (open) {
       if (selectedReservation) {
         // Wenn eine Reservierung bearbeitet wird, Formular mit den Daten füllen
-        setRobotId(selectedReservation.robotId._id);
+        const robotId = typeof selectedReservation.robotId === 'string' 
+          ? selectedReservation.robotId 
+          : (selectedReservation.robotId as Robot)._id;
+        setRobotId(robotId);
         setEventName(selectedReservation.eventName);
         setLocation(selectedReservation.location || '');
         
@@ -145,13 +148,18 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
         // Filtere Roboter basierend auf Verfügbarkeit und Status
         const available = availableRobots.filter(robot => {
           // Wenn es eine bestehende Reservierung ist, erlaube den aktuell ausgewählten Roboter immer
-          const isCurrentlySelected = selectedReservation && robot._id === selectedReservation.robotId._id;
+          const isCurrentlySelected = selectedReservation && robot._id === (
+            typeof selectedReservation.robotId === 'string' 
+              ? selectedReservation.robotId 
+              : (selectedReservation.robotId as Robot)._id
+          );
           
           // Prüfe, ob der Roboter für den Zeitraum verfügbar ist
           const isAvailableForTimeSlot = availableRobotIds.includes(robot._id);
           
           // Wenn wir einen Roboter wegen Wartung wechseln, zeige nur verfügbare Roboter an
-          if (selectedReservation && selectedReservation.robotId.status === 'maintenance' && !isCurrentlySelected) {
+          if (selectedReservation && typeof selectedReservation.robotId !== 'string' && 
+              (selectedReservation.robotId as Robot).status === 'maintenance' && !isCurrentlySelected) {
             return isAvailableForTimeSlot && robot.status !== 'maintenance';
           }
           
@@ -166,7 +174,11 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
         // Fallback: Zeige alle Roboter außer denen in Wartung
         const fallbackRobots = availableRobots.filter(robot => 
           robot.status !== 'maintenance' || 
-          (selectedReservation && robot._id === selectedReservation.robotId._id)
+          (selectedReservation && robot._id === (
+            typeof selectedReservation.robotId === 'string' 
+              ? selectedReservation.robotId 
+              : (selectedReservation.robotId as Robot)._id
+          ))
         );
         console.log('Fallback-Roboter:', fallbackRobots);
         setAvailableRobots(fallbackRobots);
@@ -183,7 +195,11 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
       console.log('Setze verfügbare Roboter zurück:', availableRobots);
       const initialRobots = availableRobots.filter(robot => 
         robot.status !== 'maintenance' || 
-        (selectedReservation && robot._id === selectedReservation.robotId._id)
+        (selectedReservation && robot._id === (
+          typeof selectedReservation.robotId === 'string' 
+            ? selectedReservation.robotId 
+            : (selectedReservation.robotId as Robot)._id
+        ))
       );
       setAvailableRobots(initialRobots);
     }
@@ -191,7 +207,10 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
 
   useEffect(() => {
     if (selectedReservation) {
-      setRobotId(selectedReservation.robotId._id);
+      const robotId = typeof selectedReservation.robotId === 'string' 
+        ? selectedReservation.robotId 
+        : (selectedReservation.robotId as Robot)._id;
+      setRobotId(robotId);
       setEventName(selectedReservation.eventName);
       setLocation(selectedReservation.location);
       
