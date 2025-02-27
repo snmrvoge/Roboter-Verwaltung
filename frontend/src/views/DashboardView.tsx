@@ -409,13 +409,24 @@ const DashboardView: React.FC = () => {
       // Stelle sicher, dass wir die ID als Zahl haben
       const robotId = typeof selectedRobot._id === 'string' ? parseInt(selectedRobot._id) : selectedRobot._id;
       
+      // Anpassen der Daten an das Backend-Format
+      const backendRobotData = {
+        name: robotData.name,
+        type: robotData.robotType,  // Konvertiere robotType zu type
+        status: robotData.status === 'available' ? 'Verfügbar' : 
+                robotData.status === 'maintenance' ? 'Wartung' : 'Reserviert',
+        location: robotData.homebase  // Konvertiere homebase zu location
+      };
+      
+      console.log('Angepasste Daten für Backend:', backendRobotData);
+      
       const response = await fetch(`${API_BASE_URL}/api/robots/${robotId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(robotData)
+        body: JSON.stringify(backendRobotData)
       });
 
       const responseText = await response.text();
@@ -428,12 +439,22 @@ const DashboardView: React.FC = () => {
       let updatedRobot;
       try {
         updatedRobot = JSON.parse(responseText);
+        
+        // Konvertiere das Backend-Format zurück zum Frontend-Format
+        updatedRobot = {
+          _id: updatedRobot.id.toString(),
+          name: updatedRobot.name,
+          robotType: updatedRobot.type,
+          status: updatedRobot.status === 'Verfügbar' ? 'available' : 
+                  updatedRobot.status === 'Wartung' ? 'maintenance' : 'reserved',
+          homebase: updatedRobot.location
+        };
       } catch (e) {
         console.error('Fehler beim Parsen der Antwort:', e);
         throw new Error('Ungültiges Antwortformat vom Server');
       }
       
-      console.log('Aktualisierter Roboter:', updatedRobot);
+      console.log('Konvertierter Roboter für Frontend:', updatedRobot);
       
       setRobots(robots.map(robot => 
         robot._id === selectedRobot._id ? updatedRobot : robot
