@@ -28,3 +28,5 @@ env_variables:
   NODE_ENV: "production"
   JWT_SECRET: "your-super-secret-key-change-this-in-production"
   PORT: "8080"
+
+instance_class: F2
