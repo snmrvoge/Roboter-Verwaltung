@@ -18,6 +18,5 @@ handlers:
 
 env_variables:
   NODE_ENV: "production"
-  MONGODB_URI: "mongodb+srv://roboter-admin:<password>@roboter-verwaltung-cluster.mongodb.net/roboter-verwaltung?retryWrites=true&w=majority"
   JWT_SECRET: "your-super-secret-key-change-this-in-production"
   PORT: "8080"
