@@ -403,7 +403,13 @@ const DashboardView: React.FC = () => {
     if (!selectedRobot) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/robots/${selectedRobot._id}`, {
+      console.log('Aktualisiere Roboter:', selectedRobot);
+      console.log('Mit Daten:', robotData);
+      
+      // Stelle sicher, dass wir die ID als Zahl haben
+      const robotId = typeof selectedRobot._id === 'string' ? parseInt(selectedRobot._id) : selectedRobot._id;
+      
+      const response = await fetch(`${API_BASE_URL}/api/robots/${robotId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -412,19 +418,41 @@ const DashboardView: React.FC = () => {
         body: JSON.stringify(robotData)
       });
 
+      const responseText = await response.text();
+      console.log('Server-Antwort:', responseText);
+      
       if (!response.ok) {
-        throw new Error('Fehler beim Aktualisieren des Roboters');
+        throw new Error(`Fehler beim Aktualisieren des Roboters: ${responseText}`);
       }
 
-      const updatedRobot = await response.json();
+      let updatedRobot;
+      try {
+        updatedRobot = JSON.parse(responseText);
+      } catch (e) {
+        console.error('Fehler beim Parsen der Antwort:', e);
+        throw new Error('Ungültiges Antwortformat vom Server');
+      }
+      
+      console.log('Aktualisierter Roboter:', updatedRobot);
+      
       setRobots(robots.map(robot => 
         robot._id === selectedRobot._id ? updatedRobot : robot
       ));
       setIsEditRobotModalOpen(false);
       setSelectedRobot(null);
+      
+      setSnackbar({
+        open: true,
+        message: 'Roboter erfolgreich aktualisiert',
+        severity: 'success'
+      });
     } catch (err) {
-      setError('Fehler beim Aktualisieren des Roboters');
-      console.error(err);
+      console.error('Fehler beim Aktualisieren des Roboters:', err);
+      setSnackbar({
+        open: true,
+        message: err instanceof Error ? err.message : 'Fehler beim Aktualisieren des Roboters',
+        severity: 'error'
+      });
     }
   };
 
@@ -462,6 +490,7 @@ const DashboardView: React.FC = () => {
 
   const handleDeleteReservation = async (reservationId: string) => {
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/api/robots/reservations/${reservationId}`, {
         method: 'DELETE',
         headers: {

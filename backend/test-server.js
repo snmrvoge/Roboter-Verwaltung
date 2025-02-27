@@ -92,7 +92,23 @@ app.get('/api/auth/validate', (req, res) => {
 
 // Roboter-Routen
 app.get('/api/robots', (req, res) => {
+  console.log('=== Get Robots Request ===');
+  console.log('Sende Roboter:', db.robots);
   res.json(db.robots);
+});
+
+app.get('/api/robots/:id', (req, res) => {
+  console.log(`=== Get Robot Request for ID ${req.params.id} ===`);
+  const robotId = parseInt(req.params.id);
+  const robot = db.robots.find(r => r.id === robotId);
+  
+  if (!robot) {
+    console.log(`Roboter mit ID ${req.params.id} nicht gefunden`);
+    return res.status(404).json({ message: 'Roboter nicht gefunden' });
+  }
+  
+  console.log('Gefundener Roboter:', robot);
+  res.json(robot);
 });
 
 app.post('/api/robots', (req, res) => {
@@ -124,13 +140,19 @@ app.put('/api/robots/:id', (req, res) => {
     return res.status(404).json({ message: 'Roboter nicht gefunden' });
   }
   
-  db.robots[robotIndex] = {
+  // Aktualisiere den Roboter mit den neuen Daten
+  const updatedRobot = {
     ...db.robots[robotIndex],
     ...req.body,
     id: robotId // ID bleibt unverändert
   };
   
-  res.json(db.robots[robotIndex]);
+  // Ersetze den alten Roboter mit dem aktualisierten
+  db.robots[robotIndex] = updatedRobot;
+  
+  // Gib den aktualisierten Roboter zurück
+  console.log('Aktualisierter Roboter:', updatedRobot);
+  res.json(updatedRobot);
 });
 
 app.delete('/api/robots/:id', (req, res) => {
