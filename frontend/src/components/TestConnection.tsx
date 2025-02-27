@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Alert, Button, CircularProgress, Box, Typography, Paper } from '@mui/material';
 import { API_BASE_URL } from '../config';
 
@@ -10,12 +10,9 @@ export const TestConnection: React.FC = () => {
     setStatus('loading');
     try {
       console.log('Testing connection to:', `${API_BASE_URL}/api/test`);
-      const response = await fetch(`${API_BASE_URL}/api/test`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
+      
+      // Direkter Fetch ohne zusätzliche Header
+      const response = await fetch(`${API_BASE_URL}/api/test`);
 
       console.log('Response status:', response.status);
       
@@ -38,38 +35,34 @@ export const TestConnection: React.FC = () => {
       <Typography variant="h6" gutterBottom>
         Verbindungstest
       </Typography>
-      
-      <Typography variant="body2" sx={{ mb: 2 }}>
+      <Typography variant="body2" gutterBottom>
         Klicken Sie auf den Button, um die Verbindung zum Server zu testen.
       </Typography>
-      
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+      <Box sx={{ mt: 2 }}>
         <Button 
           variant="contained" 
-          color="primary"
+          color="primary" 
           onClick={testConnection}
           disabled={status === 'loading'}
-          fullWidth
         >
           {status === 'loading' ? (
-            <CircularProgress size={24} color="inherit" />
-          ) : (
-            'Verbindung testen'
-          )}
+            <>
+              <CircularProgress size={24} sx={{ mr: 1, color: 'white' }} />
+              Verbinde...
+            </>
+          ) : 'Verbindung testen'}
         </Button>
-        
-        {status === 'success' && (
-          <Alert severity="success" sx={{ width: '100%' }}>
-            {message}
-          </Alert>
-        )}
-        
-        {status === 'error' && (
-          <Alert severity="error" sx={{ width: '100%' }}>
-            Verbindungsfehler: {message}
-          </Alert>
-        )}
       </Box>
+      {status === 'success' && (
+        <Alert severity="success" sx={{ mt: 2 }}>
+          {message}
+        </Alert>
+      )}
+      {status === 'error' && (
+        <Alert severity="error" sx={{ mt: 2 }}>
+          Verbindungsfehler: {message}
+        </Alert>
+      )}
     </Paper>
   );
 };
